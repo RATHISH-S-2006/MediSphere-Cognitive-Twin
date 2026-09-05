@@ -272,6 +272,13 @@ public class ApiDtoMapper {
         );
     }
 
+    public FhirDtos.FhirResourceResponse toFhirResourceResponse(FHIRResource resource) {
+        return new FhirDtos.FhirResourceResponse(
+                resource.getId(), resource.getFhirResourceId(), resource.getResourceType(),
+                resource.getPatientId(), resource.getFhirPatientRef(), resource.getSourceSystem(),
+                resource.getVersion(), resource.isValidationPassed(), resource.getLastUpdated());
+    }
+
     public FhirDtos.FhirSyncResponse toFhirSyncResponse(String patientId, String resourceType, String resourceId,
                                                         boolean persisted, boolean published, String message) {
         return new FhirDtos.FhirSyncResponse(patientId, resourceType, resourceId, persisted, published, message);

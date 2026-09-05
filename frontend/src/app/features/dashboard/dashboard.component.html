@@ -9,7 +9,7 @@
     <article class="metric"><span class="metric-icon teal">P</span><div><span>Patients</span><strong>{{ patients().length }}</strong></div></article>
     <article class="metric"><span class="metric-icon navy">T</span><div><span>HealthTwins</span><strong>{{ twins().length }}</strong></div></article>
     <article class="metric"><span class="metric-icon amber">C</span><div><span>Active consent</span><strong>{{ consented() }} / {{ patients().length }}</strong></div></article>
-    <article class="metric"><span class="metric-icon coral">F</span><div><span>FHIR sync coverage</span><strong>{{ twins().length ? (twins().length * 100 / patients().length | number:'1.0-0') : 0 }}%</strong></div></article>
+    <article class="metric"><span class="metric-icon coral">F</span><div><span>FHIR resources</span><strong>{{ fhirResourceCount() }}</strong></div></article>
   </section>
   <section class="dashboard-grid">
     <article class="panel wide"><div class="panel-heading"><div><p class="eyebrow">LATEST SIGNALS</p><h2>Recent vitals</h2></div><span class="status-dot">Live feed</span></div>

@@ -3,6 +3,7 @@ package com.medisphere.dto;
 import jakarta.validation.constraints.NotBlank;
 
 import java.util.List;
+import java.time.Instant;
 
 public final class FhirDtos {
 
@@ -19,6 +20,19 @@ public final class FhirDtos {
             String resourceType,
             String resourceId,
             List<String> errors
+    ) {
+    }
+
+    public record FhirResourceResponse(
+            String id,
+            String fhirResourceId,
+            String resourceType,
+            String patientId,
+            String fhirPatientRef,
+            String sourceSystem,
+            String version,
+            boolean validationPassed,
+            Instant lastUpdated
     ) {
     }
 

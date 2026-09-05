@@ -135,3 +135,15 @@ export interface FhirValidationResponse {
   resourceId: string | null;
   errors: string[];
 }
+
+export interface FhirResource {
+  id: string;
+  fhirResourceId: string;
+  resourceType: string;
+  patientId: string;
+  fhirPatientRef: string | null;
+  sourceSystem: string | null;
+  version: string | null;
+  validationPassed: boolean;
+  lastUpdated: string | null;
+}

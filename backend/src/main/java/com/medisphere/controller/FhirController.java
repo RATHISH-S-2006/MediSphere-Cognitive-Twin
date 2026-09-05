@@ -16,6 +16,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import com.medisphere.domain.FHIRResource;
+import com.medisphere.repository.FHIRResourceRepository;
 
 @RestController
 @RequestMapping("/api/fhir")
@@ -25,6 +29,14 @@ public class FhirController {
     private final FhirSyncService fhirSyncService;
     private final ApiDtoMapper dtoMapper;
     private final HealthTwinService healthTwinService;
+    private final FHIRResourceRepository fhirResourceRepository;
+
+    @org.springframework.web.bind.annotation.GetMapping("/{patientId}")
+    @PreAuthorize("hasAnyRole('PATIENT', 'PROVIDER', 'ADMIN') && @patientAccessChecker.canAccess(#patientId) && @consentService.hasActiveConsent(#patientId)")
+    public Page<FhirDtos.FhirResourceResponse> resources(@org.springframework.web.bind.annotation.PathVariable String patientId) {
+        return fhirResourceRepository.findByPatientId(patientId, PageRequest.of(0, 100))
+                .map(dtoMapper::toFhirResourceResponse);
+    }
 
     @PostMapping("/validate")
     @PreAuthorize("hasAnyRole('PATIENT', 'PROVIDER', 'ADMIN')")
