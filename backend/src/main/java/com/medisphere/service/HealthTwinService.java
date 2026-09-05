@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -131,6 +132,22 @@ public class HealthTwinService {
             log.debug("[TWIN] Vitals snapshot updated for patient={}", patientId);
         });
     }
+
+        public Optional<HealthTwin> findByPatientId(String patientId) {
+                return healthTwinRepository.findByPatientId(patientId);
+        }
+
+        public CompletenessResult evaluateCompleteness(String patientId) {
+                Patient patient = patientRepository.findById(patientId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Patient", patientId));
+                HealthTwin twin = healthTwinRepository.findByPatientId(patientId)
+                                .orElseThrow(() -> new ResourceNotFoundException("HealthTwin", patientId));
+                CompletenessResult completeness = calculateCompleteness(patient, twin);
+                twin.setCompletenessPercentage(completeness.percentage());
+                twin.setMissingDataPoints(completeness.missingPoints());
+                healthTwinRepository.save(twin);
+                return completeness;
+        }
 
     /**
      * Modular completeness calculation.

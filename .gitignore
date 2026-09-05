@@ -1,0 +1,13 @@
+# Maven build output
+backend/target/
+
+# Angular build output and local dependencies
+frontend/dist/
+frontend/.angular/
+frontend/node_modules/
+
+# Local environment and IDE files
+.env
+.idea/
+*.iml
+.vscode/settings.json

@@ -1,0 +1,6 @@
+medisphere:
+  wearable-simulator:
+    enabled: true
+    patient-id: patient-1
+    device-id: wearable-dev-1
+    interval-ms: 5000

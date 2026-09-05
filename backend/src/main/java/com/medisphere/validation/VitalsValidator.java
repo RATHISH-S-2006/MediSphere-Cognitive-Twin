@@ -64,7 +64,7 @@ public class VitalsValidator {
                 : VitalsValidationResult.invalid(errors);
     }
 
-    public record VitalsValidationResult(boolean valid, List<String> errors) {
+    public record VitalsValidationResult(boolean isValid, List<String> errors) {
         public static VitalsValidationResult valid() {
             return new VitalsValidationResult(true, List.of());
         }

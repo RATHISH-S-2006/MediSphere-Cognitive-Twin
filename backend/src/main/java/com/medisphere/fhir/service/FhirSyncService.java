@@ -24,7 +24,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -96,6 +95,10 @@ public class FhirSyncService {
 
         log.info("[FHIR] Patient sync complete. Synced {} patients", syncedIds.size());
         return syncedIds;
+    }
+
+    public FhirValidationReport validateResource(String resourceJson) {
+        return fhirValidator.validateAndReport(resourceJson);
     }
 
     /**

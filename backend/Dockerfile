@@ -1,22 +1,17 @@
 FROM eclipse-temurin:25-jdk AS build
 
-# Download and install Maven 3.9.9 directly to avoid apt-get pulling old Java dependencies
-RUN apt-get update && apt-get install -y wget tar && \
-    wget https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz && \
-    tar xzf apache-maven-3.9.9-bin.tar.gz -C /opt && \
-    ln -s /opt/apache-maven-3.9.9 /opt/maven && \
-    ln -s /opt/maven/bin/mvn /usr/local/bin/mvn
-
 WORKDIR /app
 COPY pom.xml .
+COPY .mvn ./.mvn
+COPY mvnw .
 COPY src ./src
 
-# Explicitly verify java and mvn versions as requested for Phase 1
+RUN chmod +x mvnw
 RUN java -version
-RUN mvn -version
+RUN ./mvnw --version
 
-# Compile and package the application
-RUN mvn clean package -DskipTests
+# Compile and package without resolving or compiling test sources in the runtime image.
+RUN ./mvnw clean package -Dmaven.test.skip=true
 
 # Runtime stage
 FROM eclipse-temurin:25-jre

@@ -1,18 +1,22 @@
 package com.medisphere.security;
 
+import java.time.Instant;
+import java.util.List;
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.List;
 
 /**
  * SMART on FHIR foundation security configuration.
@@ -31,6 +35,25 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+
+    @Bean
+    @ConditionalOnMissingBean(JwtDecoder.class)
+    @Profile("dev")
+    public JwtDecoder devJwtDecoder() {
+        return token -> {
+            String[] parts = token.split("-", 2);
+            String role = parts.length == 2 ? parts[0].toUpperCase() : "ADMIN";
+            String subject = parts.length == 2 ? parts[1] : "dev-user";
+            return Jwt.withTokenValue(token)
+                .header("alg", "none")
+                .claim("sub", subject)
+                .claim("roles", List.of(role))
+                .claim("scope", "openid fhirUser patient/*.read user/*.read")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(3600))
+                .build();
+        };
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
