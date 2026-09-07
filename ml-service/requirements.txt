@@ -1,0 +1,17 @@
+﻿--find-links https://storage.googleapis.com/jax-releases/jax_releases.html
+numpy==1.25.2
+pandas==2.2.2
+scikit-learn==1.5.2
+shap==0.46.0
+fastapi==0.103.2
+uvicorn==0.30.6
+pytest==8.3.2
+python-dotenv==1.0.1
+typing-extensions==4.5.0
+
+# Official TFF 0.87.0 contract: Python >=3.9,<3.12, TensorFlow 2.14.x,
+# NumPy 1.25.x, and exact JAX/JAXLIB 0.4.14.
+tensorflow==2.14.0
+jax==0.4.14
+jaxlib==0.4.14
+tensorflow-federated==0.87.0

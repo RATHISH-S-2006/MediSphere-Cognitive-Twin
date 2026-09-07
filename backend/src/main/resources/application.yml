@@ -20,7 +20,8 @@ spring:
 medisphere:
   fhir:
     base-url: ${FHIR_BASE_URL:http://localhost:8081/fhir}
-  
+  ml:
+    base-url: ${ML_SERVICE_URL:http://localhost:8001}
   wearable-simulator:
     enabled: false
     interval-ms: 5000
