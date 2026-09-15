@@ -135,4 +135,4 @@ The backend risk endpoints enforce patient access checks and active consent rule
 
 ## Data and clinical-use note
 
-M2 model training and evaluation use synthetic demonstration data. Evaluation metrics are engineering/demo metrics only and must not be interpreted as clinical performance evidence. Missing patient features are treated as unavailable and are imputed by the ML pipeline rather than fabricated from unrelated patient fields.
+M2 model training and evaluation use synthetic demonstration data. Evaluation metrics are engineering/demo metrics only and must not be interpreted as clinical performance evidence.
