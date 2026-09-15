@@ -14,6 +14,22 @@ services:
       timeout: 5s
       retries: 5
 
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: medisphere-ml
+    ports:
+      - "8001:8001"
+    environment:
+      PYTHONUNBUFFERED: "1"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health').read() and print('ok')"]
+      interval: 15s
+      timeout: 15s
+      retries: 15
+      start_period: 45s
+
   kafka:
     image: apache/kafka:3.7.0
     container_name: medisphere-kafka
@@ -59,6 +75,7 @@ services:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/medisphere
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - FHIR_BASE_URL=http://hapi-fhir:8080/fhir
+      - ML_SERVICE_URL=http://ml-service:8001
       - SPRING_PROFILES_ACTIVE=dev
     depends_on:
       mongodb:
@@ -67,6 +84,8 @@ services:
         condition: service_started
       hapi-fhir:
         condition: service_started
+      ml-service:
+        condition: service_healthy
 
 volumes:
   mongo_data:

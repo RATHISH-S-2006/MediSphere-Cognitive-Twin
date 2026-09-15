@@ -147,3 +147,23 @@ export interface FhirResource {
   validationPassed: boolean;
   lastUpdated: string | null;
 }
+
+export interface RiskExplanation {
+  feature: string;
+  label: string;
+  value: number;
+  shapValue: number;
+  impact: string;
+}
+
+export interface RiskPrediction {
+  id: string;
+  patientId: string;
+  modelType: string;
+  riskScore: number;
+  riskCategory: string;
+  modelVersion: string;
+  generatedAt: string;
+  explanations: RiskExplanation[];
+  inputFeatures?: Record<string, number>;
+}

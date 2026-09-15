@@ -20,7 +20,10 @@ spring:
 medisphere:
   fhir:
     base-url: ${FHIR_BASE_URL:http://localhost:8081/fhir}
-  
+  ml:
+    base-url: ${ML_SERVICE_URL:http://localhost:8001}
+    connect-timeout-ms: ${ML_CONNECT_TIMEOUT_MS:2000}
+    read-timeout-ms: ${ML_READ_TIMEOUT_MS:10000}
   wearable-simulator:
     enabled: false
     interval-ms: 5000
