@@ -1,6 +1,7 @@
 package com.medisphere.risk;
 
 import com.medisphere.domain.Patient;
+import com.medisphere.domain.LabResult;
 import com.medisphere.domain.Vitals;
 import com.medisphere.repository.PatientRepository;
 import com.medisphere.repository.VitalsRepository;
@@ -35,6 +36,9 @@ class RiskPredictionServiceTest {
     @Mock
     private RiskPredictionRepository riskPredictionRepository;
 
+        @Mock
+        private MlPredictionClient mlPredictionClient;
+
     @InjectMocks
     private RiskPredictionService riskPredictionService;
 
@@ -63,6 +67,12 @@ class RiskPredictionServiceTest {
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of()));
         when(riskPredictionRepository.save(any(RiskPrediction.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(mlPredictionClient.predict(any(), any(), any()))
+                .thenReturn(new MlPredictionClient.MlPredictionResponse(
+                        "patient-1", "CARDIOVASCULAR", 0.61, "MODERATE", "cardiovascular-model-v1",
+                        "2026-09-15T00:00:00Z",
+                        List.of(new MlPredictionClient.MlExplanation(
+                                "systolicBloodPressure", 138.0, 0.25, "INCREASES_RISK"))));
 
         RiskPredictionResponse response = riskPredictionService.buildAndPersistPrediction(
                 "patient-1",
@@ -74,4 +84,18 @@ class RiskPredictionServiceTest {
         assertThat(response.modelType()).isEqualTo("CARDIOVASCULAR");
         assertThat(response.riskCategory()).isNotBlank();
     }
+
+        @Test
+        void mapsGlucoseAndHba1cFromTheirOwnLabs() {
+                Patient patient = Patient.builder().id("patient-1").gender("female").dateOfBirth("1986-04-12").build();
+                Vitals vitals = Vitals.builder().systolicBp(120).diastolicBp(80).heartRate(70).build();
+                List<LabResult> labs = List.of(
+                                LabResult.builder().testName("Hemoglobin A1c").testCode("4548-4").value("6.4").build(),
+                                LabResult.builder().testName("Glucose").testCode("2339-0").value("118").build());
+
+                RiskPredictionService.FeatureSummary summary = riskPredictionService.extractFeatureSummary(patient, vitals, labs);
+
+                assertThat(summary.glucose()).isEqualTo(118.0);
+                assertThat(summary.hba1c()).isEqualTo(6.4);
+        }
 }

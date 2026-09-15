@@ -12,7 +12,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Document(collection = "risk_predictions")
 @Data
@@ -46,4 +48,7 @@ public class RiskPrediction {
     private Instant updatedAt;
 
     private String source;
+
+    @Builder.Default
+    private Map<String, Double> inputFeatures = new HashMap<>();
 }

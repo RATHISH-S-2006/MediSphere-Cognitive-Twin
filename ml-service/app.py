@@ -76,6 +76,8 @@ def runtime_ready() -> bool:
 
 @app.on_event("startup")
 def startup_event() -> None:
+    if tff is not None:
+        tff.backends.native.set_sync_local_cpp_execution_context(default_num_clients=3)
     runtime_ready()
 
 
@@ -163,6 +165,10 @@ def build_sklearn_model(model_type: str) -> dict:
     )
     pipeline.fit(X_train, y_train)
 
+    transformed_train = pipeline.named_steps["scaler"].transform(
+        pipeline.named_steps["imputer"].transform(X_train)
+    )
+
     scores = pipeline.predict_proba(X_test)[:, 1]
     predictions = pipeline.predict(X_test)
     metrics = {
@@ -179,6 +185,8 @@ def build_sklearn_model(model_type: str) -> dict:
         "columns": feature_columns,
         "modelType": model_key,
         "metrics": metrics,
+        "shapBackground": transformed_train,
+        "evaluationSamples": int(len(y_test)),
     }
     MODEL_CACHE[model_key] = bundle
     return bundle
@@ -196,8 +204,11 @@ def build_explanations(model_type: str, features: Dict[str, float]) -> List[Expl
     bundle = build_sklearn_model(model_type)
     pipeline = bundle["pipeline"]
     row = pd.DataFrame([features], columns=bundle["columns"])
-    explainer = shap.Explainer(pipeline.named_steps["model"], row)
-    values = explainer(row).values[0]
+    transformed_row = pipeline.named_steps["scaler"].transform(
+        pipeline.named_steps["imputer"].transform(row)
+    )
+    explainer = shap.LinearExplainer(pipeline.named_steps["model"], bundle["shapBackground"])
+    values = np.asarray(explainer(transformed_row).values)[0]
     top = sorted(
         zip(bundle["columns"], row.iloc[0].to_numpy(), values),
         key=lambda item: abs(float(item[2])),
@@ -237,14 +248,17 @@ def predict(req: PredictionRequest) -> dict:
     pipeline = bundle["pipeline"]
     feature_order = bundle["columns"]
 
-    record = {key: float(value) for key, value in req.features.items() if value is not None}
+    supplied_features = dict(req.features)
+    if model_type == "DIABETES" and "sex" not in supplied_features and "gender" in supplied_features:
+        supplied_features["sex"] = supplied_features["gender"]
+    record = {key: float(value) for key, value in supplied_features.items() if value is not None}
     for key in feature_order:
         record.setdefault(key, 0.0)
 
     frame = pd.DataFrame([record], columns=feature_order)
     score = float(pipeline.predict_proba(frame)[0][1])
 
-    return PredictionResponse(
+    response = PredictionResponse(
         patientId=req.patientId,
         modelType=model_type,
         riskScore=score,
@@ -252,14 +266,24 @@ def predict(req: PredictionRequest) -> dict:
         modelVersion=f"{model_type.lower()}-model-v1",
         generatedAt=datetime.now(timezone.utc).isoformat(),
         explanations=build_explanations(model_type, record),
-    ).model_dump()
+    )
+    return response.model_dump() if hasattr(response, "model_dump") else response.dict()
 
 
 @app.get("/model-evaluation")
 def model_evaluation() -> dict:
     if not APP_READY:
         runtime_ready()
-    return {"cardiovascular": build_sklearn_model("CARDIOVASCULAR")["metrics"]}
+    evaluations = {}
+    for model_type in ("CARDIOVASCULAR", "DIABETES"):
+        bundle = build_sklearn_model(model_type)
+        evaluations[model_type.lower()] = {
+            **bundle["metrics"],
+            "dataset": "synthetic_health_demo",
+            "evaluationSamples": bundle["evaluationSamples"],
+            "modelVersion": f"{model_type.lower()}-model-v1",
+        }
+    return evaluations
 
 
 def run_federated_demo() -> dict:
@@ -268,6 +292,8 @@ def run_federated_demo() -> dict:
 
     if tff is None:
         raise RuntimeError("TensorFlow Federated is unavailable in this runtime")
+
+    tff.backends.native.set_sync_local_cpp_execution_context(default_num_clients=3)
 
     df = load_demo_dataset().copy()
     feature_cols = ["age", "sex", "systolicBloodPressure", "diastolicBloodPressure", "heartRate", "smokingStatus", "diabetesStatus", "bmi", "totalCholesterol"]
@@ -278,6 +304,10 @@ def run_federated_demo() -> dict:
     positive_indices = np.where(y == 1)[0]
     negative_indices = np.where(y == 0)[0]
     client_datasets = []
+
+    feature_mean = X.mean(axis=0)
+    feature_scale = X.std(axis=0)
+    X = (X - feature_mean) / np.maximum(feature_scale, 1e-6)
 
     for idx in range(client_count):
         pos_start = idx * len(positive_indices) // client_count
@@ -305,16 +335,11 @@ def run_federated_demo() -> dict:
             ],
             name="federated_health_model",
         )
-        model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=0.01),
-            loss=tf.keras.losses.BinaryCrossentropy(),
-            metrics=[tf.keras.metrics.BinaryAccuracy(name="accuracy")],
-        )
         return model
 
-    def model_fn() -> tff.learning.Model:
+    def model_fn():
         keras_model = build_keras_model()
-        return tff.learning.from_keras_model(
+        return tff.learning.models.from_keras_model(
             keras_model,
             input_spec=client_datasets[0].element_spec,
             loss=tf.keras.losses.BinaryCrossentropy(),
@@ -323,17 +348,35 @@ def run_federated_demo() -> dict:
 
     fed_avg = tff.learning.algorithms.build_unweighted_fed_avg(
         model_fn=model_fn,
-        client_optimizer_fn=lambda: tf.keras.optimizers.Adam(learning_rate=0.01),
-        server_optimizer_fn=lambda: tf.keras.optimizers.Adam(learning_rate=0.01),
+        client_optimizer_fn=tff.learning.optimizers.build_adam(learning_rate=0.01),
+        server_optimizer_fn=tff.learning.optimizers.build_adam(learning_rate=0.01),
     )
 
     state = fed_avg.initialize()
+    initial_weights = tf.nest.map_structure(
+        lambda value: np.array(value, copy=True), fed_avg.get_model_weights(state)
+    )
     history = []
 
     for round_no in range(3):
         state, metrics = fed_avg.next(state, client_datasets)
-        train_loss = float(metrics["train"]["loss"])
-        train_accuracy = float(metrics["train"]["accuracy"])
+        train_metrics = metrics["client_work"]["train"]
+        train_loss = float(train_metrics["loss"])
+        train_accuracy = float(train_metrics["accuracy"])
+        updated_weights = tf.nest.map_structure(
+            lambda value: np.array(value, copy=True), fed_avg.get_model_weights(state)
+        )
+        weight_delta_norm = float(
+            np.sqrt(
+                sum(
+                    np.sum(np.square(updated - previous))
+                    for updated, previous in zip(
+                        tf.nest.flatten(updated_weights),
+                        tf.nest.flatten(initial_weights),
+                    )
+                )
+            )
+        )
 
         logger.info("TensorFlow Federated round %s complete; loss=%s accuracy=%s", round_no + 1, train_loss, train_accuracy)
         history.append(
@@ -341,13 +384,21 @@ def run_federated_demo() -> dict:
                 "round": round_no + 1,
                 "loss": round(train_loss, 4),
                 "accuracy": round(train_accuracy, 4),
+                "globalWeightDeltaNorm": round(weight_delta_norm, 6),
+                "globalStateChanged": weight_delta_norm > 0.0,
             }
         )
+        initial_weights = updated_weights
 
     return {
         "clients": [f"hospital-{idx + 1}" for idx in range(client_count)],
+        "clientCount": client_count,
         "rounds": len(history),
         "globalModel": "tff-fedavg",
+        "aggregation": {
+            "method": "TFF unweighted FedAvg",
+            "clientUpdatesAggregatedPerRound": client_count,
+        },
         "rawDataLocal": True,
         "status": "completed",
         "engine": "tensorflow-federated",
@@ -356,5 +407,5 @@ def run_federated_demo() -> dict:
 
 
 @app.get("/federated-demo")
-def federated_demo() -> dict:
+async def federated_demo() -> dict:
     return run_federated_demo()

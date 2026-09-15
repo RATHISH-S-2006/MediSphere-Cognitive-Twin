@@ -16,9 +16,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -30,6 +31,7 @@ public class RiskPredictionService {
     private final VitalsRepository vitalsRepository;
     private final LabResultRepository labResultRepository;
     private final RiskPredictionRepository riskPredictionRepository;
+    private final MlPredictionClient mlPredictionClient;
 
     private static final List<String> CARDIO_FEATURES = List.of(
             "age", "sex", "systolicBloodPressure", "diastolicBloodPressure", "heartRate", "smokingStatus", "diabetesStatus", "bmi", "totalCholesterol"
@@ -55,21 +57,23 @@ public class RiskPredictionService {
         FeatureSummary summary = extractFeatureSummary(patient, latestVitals, labs);
 
         String modelType = normalizeModelType(request.modelType());
-        double score = estimateRisk(modelType, summary);
-        String riskCategory = categorizeRisk(score, modelType);
-        String modelVersion = "risk-model-v1";
-        Instant generatedAt = Instant.now();
+        Map<String, Double> features = toMlFeatures(modelType, summary);
+        MlPredictionClient.MlPredictionResponse prediction = mlPredictionClient.predict(patientId, modelType, features);
+        Instant generatedAt = parseGeneratedAt(prediction.generatedAt());
 
         RiskPrediction riskPrediction = RiskPrediction.builder()
                 .id(UUID.randomUUID().toString())
                 .patientId(patientId)
                 .modelType(modelType)
-                .riskScore(score)
-                .riskCategory(riskCategory)
-                .modelVersion(modelVersion)
+                .riskScore(prediction.riskScore())
+                .riskCategory(prediction.riskCategory())
+                .modelVersion(prediction.modelVersion())
                 .generatedAt(generatedAt)
                 .source(request.source() == null ? "backend" : request.source())
-                .explanations(buildExplanations(modelType, summary, score))
+                .explanations(prediction.explanations().stream()
+                    .map(exp -> new RiskPredictionExplanation(exp.feature(), exp.feature(), exp.value(), exp.shapValue(), exp.impact()))
+                    .toList())
+                .inputFeatures(features)
                 .build();
 
         riskPrediction = riskPredictionRepository.save(riskPrediction);
@@ -92,11 +96,17 @@ public class RiskPredictionService {
         return riskPredictionRepository.findByPatientIdOrderByGeneratedAtDesc(patientId, pageable);
     }
 
+    public RiskPrediction getLatest(String patientId, String modelType) {
+        return riskPredictionRepository.findTopByPatientIdAndModelTypeOrderByGeneratedAtDesc(
+                        patientId, normalizeModelType(modelType))
+                .orElseThrow(() -> new ResourceNotFoundException("Risk prediction", patientId));
+    }
+
     public FeatureSummary extractFeatureSummary(Patient patient, Vitals latestVitals, List<LabResult> labs) {
         String gender = patient.getGender() == null ? "unknown" : patient.getGender().toLowerCase(Locale.ROOT);
         double age = computeAge(patient.getDateOfBirth());
         double bmi = estimateBmiFromLabs(labs);
-        double glucose = findNumericLabValue(labs, "Hemoglobin A1c", "A1c", "GLUCOSE", "GLUCOSE_FASTING");
+        double glucose = findNumericLabValue(labs, "Glucose", "GLUCOSE_FASTING", "GLUCOSE");
         double hba1c = findNumericLabValue(labs, "Hemoglobin A1c", "A1C", "HbA1c");
         double totalCholesterol = findNumericLabValue(labs, "Lipid Panel", "Cholesterol", "TOTAL_CHOLESTEROL");
         double smokingStatus = (patient.getId() != null && patient.getId().contains("patient-3")) ? 1.0 : 0.0;
@@ -128,38 +138,32 @@ public class RiskPredictionService {
         };
     }
 
-    private double estimateRisk(String modelType, FeatureSummary summary) {
+    private Map<String, Double> toMlFeatures(String modelType, FeatureSummary summary) {
+        Map<String, Double> features = new LinkedHashMap<>();
+        features.put("age", summary.age());
+        features.put("sex", genderToSex(summary.gender()));
+        features.put("bmi", summary.bmi());
+        features.put("systolicBloodPressure", summary.systolicBloodPressure());
+        features.put("diastolicBloodPressure", summary.diastolicBloodPressure());
         if ("DIABETES".equals(modelType)) {
-            double score = 0.22 + (summary.age() / 100.0) * 0.24 + (summary.hba1c() / 12.0) * 0.27 + (summary.bmi() / 60.0) * 0.18 + (summary.systolicBloodPressure() / 200.0) * 0.10 + (summary.diabetesStatus() * 0.15);
-            return Math.max(0.0, Math.min(1.0, score));
-        }
-
-        double score = 0.18 + (summary.age() / 100.0) * 0.26 + (summary.systolicBloodPressure() / 220.0) * 0.25
-                + (summary.diastolicBloodPressure() / 120.0) * 0.10 + (summary.heartRate() / 120.0) * 0.08
-                + summary.smokingStatus() * 0.17 + summary.diabetesStatus() * 0.14 + (summary.totalCholesterol() / 300.0) * 0.12;
-        return Math.max(0.0, Math.min(1.0, score));
-    }
-
-    private String categorizeRisk(double score, String modelType) {
-        if (score >= 0.7) return "HIGH";
-        if (score >= 0.4) return "MODERATE";
-        return "LOW";
-    }
-
-    private List<RiskPredictionExplanation> buildExplanations(String modelType, FeatureSummary summary, double score) {
-        List<RiskPredictionExplanation> explanations = new ArrayList<>();
-        if ("DIABETES".equals(modelType)) {
-            explanations.add(new RiskPredictionExplanation("hba1c", "Hemoglobin A1c", summary.hba1c(), 0.18 + summary.hba1c() * 0.03, "INCREASES_RISK"));
-            explanations.add(new RiskPredictionExplanation("bmi", "Body mass index", summary.bmi(), 0.12 + summary.bmi() * 0.02, "INCREASES_RISK"));
-            explanations.add(new RiskPredictionExplanation("systolicBloodPressure", "Systolic blood pressure", summary.systolicBloodPressure(), 0.09 + summary.systolicBloodPressure() * 0.0016, "INCREASES_RISK"));
-            explanations.add(new RiskPredictionExplanation("age", "Age", summary.age(), 0.07 + summary.age() * 0.002, "INCREASES_RISK"));
+            features.put("glucose", summary.glucose());
+            features.put("hba1c", summary.hba1c());
+            features.put("diabetesDuration", summary.diabetesDuration());
         } else {
-            explanations.add(new RiskPredictionExplanation("systolicBloodPressure", "Systolic blood pressure", summary.systolicBloodPressure(), 0.16 + summary.systolicBloodPressure() * 0.0012, "INCREASES_RISK"));
-            explanations.add(new RiskPredictionExplanation("diabetesStatus", "Diabetes status", summary.diabetesStatus(), 0.12 + summary.diabetesStatus() * 0.15, "INCREASES_RISK"));
-            explanations.add(new RiskPredictionExplanation("smokingStatus", "Smoking status", summary.smokingStatus(), 0.10 + summary.smokingStatus() * 0.20, "INCREASES_RISK"));
-            explanations.add(new RiskPredictionExplanation("age", "Age", summary.age(), 0.08 + summary.age() * 0.002, "INCREASES_RISK"));
+            features.put("heartRate", summary.heartRate());
+            features.put("smokingStatus", summary.smokingStatus());
+            features.put("diabetesStatus", summary.diabetesStatus());
+            features.put("totalCholesterol", summary.totalCholesterol());
         }
-        return explanations;
+        return features;
+    }
+
+    private double genderToSex(String gender) {
+        return "male".equalsIgnoreCase(gender) ? 1.0 : 0.0;
+    }
+
+    private Instant parseGeneratedAt(String generatedAt) {
+        return Instant.parse(generatedAt);
     }
 
     private double computeAge(String dateOfBirth) {
@@ -181,9 +185,12 @@ public class RiskPredictionService {
     private double findNumericLabValue(List<LabResult> labs, String... candidates) {
         for (String candidate : candidates) {
             for (LabResult lab : labs) {
-                if (lab == null || lab.getTestName() == null) continue;
-                if (lab.getTestName().toLowerCase(Locale.ROOT).contains(candidate.toLowerCase(Locale.ROOT)) ||
-                        (lab.getTestCode() != null && lab.getTestCode().equalsIgnoreCase(candidate))) {
+            if (lab == null) continue;
+            boolean nameMatches = lab.getTestName() != null
+                && lab.getTestName().toLowerCase(Locale.ROOT).contains(candidate.toLowerCase(Locale.ROOT));
+            boolean codeMatches = lab.getTestCode() != null && lab.getTestCode().equalsIgnoreCase(candidate);
+            if (nameMatches ||
+                codeMatches) {
                     try {
                         return Double.parseDouble(lab.getValue());
                     } catch (Exception ignored) {

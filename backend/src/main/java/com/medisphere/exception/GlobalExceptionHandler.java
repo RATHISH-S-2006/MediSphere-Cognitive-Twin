@@ -2,6 +2,7 @@ package com.medisphere.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import com.medisphere.common.CorrelationIdFilter;
+import com.medisphere.risk.MlServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleConsent(ConsentRequiredException ex, WebRequest request) {
         return error(HttpStatus.FORBIDDEN, "CONSENT_REQUIRED",
                 "Patient consent is required to access this resource.", request);
+    }
+
+    @ExceptionHandler(MlServiceException.class)
+    public ResponseEntity<Map<String, Object>> handleMlService(MlServiceException ex, WebRequest request) {
+        log.error("[ML] Risk prediction unavailable: {}", ex.getMessage());
+        return error(HttpStatus.SERVICE_UNAVAILABLE, "ML_SERVICE_UNAVAILABLE",
+                "Risk prediction service is temporarily unavailable.", request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

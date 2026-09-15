@@ -18,7 +18,7 @@ public class RiskPredictionController {
     private final ConsentService consentService;
 
     @PostMapping("/{patientId}/cardiovascular/predict")
-    @PreAuthorize("hasAnyRole('PATIENT', 'PROVIDER', 'ADMIN') && @patientAccessChecker.canAccess(#patientId)")
+    @PreAuthorize("hasAnyRole('PATIENT', 'PROVIDER', 'CLINICIAN', 'ADMIN') && @patientAccessChecker.canAccess(#patientId)")
     public ResponseEntity<RiskPredictionResponse> predictCardiovascular(@PathVariable String patientId,
                                                                       @Valid @RequestBody RiskPredictionRequest request) {
         consentService.verifyConsent(patientId);
@@ -26,7 +26,7 @@ public class RiskPredictionController {
     }
 
     @PostMapping("/{patientId}/diabetes/predict")
-    @PreAuthorize("hasAnyRole('PATIENT', 'PROVIDER', 'ADMIN') && @patientAccessChecker.canAccess(#patientId)")
+    @PreAuthorize("hasAnyRole('PATIENT', 'PROVIDER', 'CLINICIAN', 'ADMIN') && @patientAccessChecker.canAccess(#patientId)")
     public ResponseEntity<RiskPredictionResponse> predictDiabetes(@PathVariable String patientId,
                                                                 @Valid @RequestBody RiskPredictionRequest request) {
         consentService.verifyConsent(patientId);
@@ -34,11 +34,19 @@ public class RiskPredictionController {
     }
 
     @GetMapping("/{patientId}")
-    @PreAuthorize("hasAnyRole('PATIENT', 'PROVIDER', 'ADMIN') && @patientAccessChecker.canAccess(#patientId)")
+    @PreAuthorize("hasAnyRole('PATIENT', 'PROVIDER', 'CLINICIAN', 'ADMIN') && @patientAccessChecker.canAccess(#patientId)")
     public ResponseEntity<Page<RiskPrediction>> getHistory(@PathVariable String patientId,
                                                           @RequestParam(defaultValue = "0") int page,
                                                           @RequestParam(defaultValue = "10") int size) {
         consentService.verifyConsent(patientId);
         return ResponseEntity.ok(riskPredictionService.listHistory(patientId, PageRequest.of(page, size)));
+    }
+
+    @GetMapping("/{patientId}/latest")
+    @PreAuthorize("hasAnyRole('PATIENT', 'PROVIDER', 'CLINICIAN', 'ADMIN') && @patientAccessChecker.canAccess(#patientId)")
+    public ResponseEntity<RiskPrediction> getLatest(@PathVariable String patientId,
+                                                     @RequestParam(defaultValue = "CARDIOVASCULAR") String modelType) {
+        consentService.verifyConsent(patientId);
+        return ResponseEntity.ok(riskPredictionService.getLatest(patientId, modelType));
     }
 }

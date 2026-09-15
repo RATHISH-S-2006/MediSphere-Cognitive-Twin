@@ -157,6 +157,7 @@ export interface RiskExplanation {
 }
 
 export interface RiskPrediction {
+  id: string;
   patientId: string;
   modelType: string;
   riskScore: number;
@@ -164,4 +165,5 @@ export interface RiskPrediction {
   modelVersion: string;
   generatedAt: string;
   explanations: RiskExplanation[];
+  inputFeatures?: Record<string, number>;
 }
