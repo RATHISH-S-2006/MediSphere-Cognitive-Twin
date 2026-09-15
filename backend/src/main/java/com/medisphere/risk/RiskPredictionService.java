@@ -96,12 +96,12 @@ public class RiskPredictionService {
     }
 
     public FeatureSummary extractFeatureSummary(Patient patient, Vitals latestVitals, List<LabResult> labs) {
-        String gender = patient.getGender() == null ? "unknown" : patient.getGender().toLowerCase(Locale.ROOT);
-        double age = computeAge(patient.getDateOfBirth());
+        String gender = patient.getGender() == null ? null : patient.getGender().toLowerCase(Locale.ROOT);
+        Double age = computeAge(patient.getDateOfBirth());
         double glucose = findNumericLabValue(labs, "Glucose", "GLUCOSE_FASTING", "GLUCOSE");
         double hba1c = findNumericLabValue(labs, "Hemoglobin A1c", "A1C", "HbA1c");
         double totalCholesterol = findNumericLabValue(labs, "Total Cholesterol", "Cholesterol", "TOTAL_CHOLESTEROL");
-        double diabetesStatus = hba1c >= 6.5 || glucose >= 126 ? 1.0 : 0.0;
+        Double diabetesStatus = (hba1c > 0 || glucose > 0) ? (hba1c >= 6.5 || glucose >= 126 ? 1.0 : 0.0) : null;
 
         return new FeatureSummary(
                 age,
@@ -131,8 +131,9 @@ public class RiskPredictionService {
 
     private Map<String, Double> toMlFeatures(String modelType, FeatureSummary summary) {
         Map<String, Double> features = new LinkedHashMap<>();
-        features.put("age", summary.age());
-        features.put("sex", genderToSex(summary.gender()));
+        if (summary.age() != null) features.put("age", summary.age());
+        Double sex = genderToSex(summary.gender());
+        if (sex != null) features.put("sex", sex);
         if (summary.bmi() != null) features.put("bmi", summary.bmi());
         if (summary.systolicBloodPressure() != null) features.put("systolicBloodPressure", summary.systolicBloodPressure());
         if (summary.diastolicBloodPressure() != null) features.put("diastolicBloodPressure", summary.diastolicBloodPressure());
@@ -149,18 +150,21 @@ public class RiskPredictionService {
         return features;
     }
 
-    private double genderToSex(String gender) {
-        return "male".equalsIgnoreCase(gender) ? 1.0 : 0.0;
+    private Double genderToSex(String gender) {
+        if (gender == null) return null;
+        if ("male".equalsIgnoreCase(gender)) return 1.0;
+        if ("female".equalsIgnoreCase(gender)) return 0.0;
+        return null;
     }
 
-    private double computeAge(String dateOfBirth) {
-        if (dateOfBirth == null || dateOfBirth.length() < 4) return 45.0;
+    private Double computeAge(String dateOfBirth) {
+        if (dateOfBirth == null || dateOfBirth.length() < 4) return null;
         try {
             int year = Integer.parseInt(dateOfBirth.substring(0, 4));
             int currentYear = Instant.now().atZone(java.time.ZoneId.systemDefault()).getYear();
-            return Math.max(18.0, currentYear - year);
+            return Math.max(0.0, (double) currentYear - year);
         } catch (Exception ex) {
-            return 45.0;
+            return null;
         }
     }
 
@@ -184,7 +188,7 @@ public class RiskPredictionService {
     }
 
     public record FeatureSummary(
-            double age,
+            Double age,
             String gender,
             Double systolicBloodPressure,
             Double diastolicBloodPressure,
