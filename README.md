@@ -1,163 +1,1000 @@
-# MediSphere Cognitive Twin
+# 🏥 MediSphere Cognitive Twin
 
-MediSphere is a healthcare digital twin platform that ingests synthetic patient, lab, consent, FHIR, and wearable data, then exposes a digital patient profile plus an AI risk-prediction layer.
+> **An AI-powered healthcare platform that creates a Digital Health Twin for each patient, predicts health risks, continuously monitors vital signs, generates explainable alerts, and provides a foundation for personalized care planning.**
 
-## Stack
+## 📌 What is MediSphere Cognitive Twin?
 
-- Backend: Java 25, Spring Boot 4, Spring Security, Spring Data MongoDB
-- Integration: Kafka, HAPI FHIR R4
-- Frontend: Angular 20
-- Local runtime: Docker Compose
-- ML runtime: Python 3.11 in Docker, TensorFlow 2.14.0, TensorFlow Federated 0.87.0, SHAP 0.46.0, scikit-learn 1.5.2, pandas 2.2.2, NumPy 1.25.2, JAX/JAXLIB 0.4.14
+MediSphere Cognitive Twin is a healthcare technology platform designed to maintain a continuously updated **Digital Health Twin** of a patient.
 
-## M1 Features
+It brings together:
 
-- Patient directory and Patient 360 view
-- Digital HealthTwin completeness and latest-vitals snapshot
-- Separate historical vitals and lab-result collections
-- FHIR validation, synchronization, readable resource inspection
-- Server-side consent enforcement and patient-level authorization
-- Kafka vitals ingestion, idempotency, retry, and `.DLT` handling
-- Development wearable simulator and synthetic seed data
-- HIPAA-oriented audit and security safeguards
+- 🏥 Hospital/EHR data
+- 🧪 Laboratory results
+- ⌚ Wearable vital signs
+- 🔗 FHIR R4 resources
+- 🧠 AI-based risk predictions
+- 🚨 Real-time monitoring and alerts
+- 🔐 Consent, authorization, and audit information
 
-## M2 Features
+### Core flow
 
-- ML service in Docker with Python 3.11 runtime
-- Cardiovascular and diabetes risk models trained from synthetic demonstration data
-- SHAP feature explanations
-- Federated learning with TensorFlow Federated FedAvg
-- Spring Boot endpoint integration using `ML_SERVICE_URL`
-- MongoDB persistence for risk predictions, feature snapshots, and history
-- Angular Patient 360 risk prediction and history UI
-
-## M3 Continuous monitoring and alerts
-
-M3 reuses the existing `medisphere.vitals` Kafka topic and `VitalsConsumer`. After the existing patient, consent, validation, vitals persistence, and HealthTwin update steps succeed, the consumer evaluates the same `VitalEvent` against the configurable monitoring rules in `backend/src/main/resources/application.yml`. Violations are stored in MongoDB's `alerts` collection and exposed in Patient 360 through the alert API.
-
-The default rules cover heart rate, SpO2, temperature, systolic blood pressure, and diastolic blood pressure. These are engineering/demo thresholds, not medically validated clinical or treatment thresholds. Each rule defines its alert type, vital type, severity, comparison operator, threshold, and enabled flag.
-
-An existing `ACTIVE` alert with the same patient, alert type, and vital type is retained when repeated events violate that rule. Different rules create separate alerts. Lifecycle transitions are `ACTIVE -> ACKNOWLEDGED -> RESOLVED`; an active alert may also be resolved directly. Invalid transitions return a conflict response.
-
-Alert endpoints are protected by the existing JWT roles, `PatientAccessChecker`, and active-consent enforcement:
-
-- `GET /api/alerts/{patientId}` - patient alert records
-- `GET /api/alerts/{patientId}/active` - active and acknowledged alerts
-- `GET /api/alerts/{patientId}/history` - resolved alert history
-- `GET /api/alerts/by-id/{id}` - one alert
-- `POST /api/alerts/by-id/{id}/acknowledge` - acknowledge an active alert
-- `POST /api/alerts/by-id/{id}/resolve` - resolve an active or acknowledged alert
-
-Patient 360 polls active and resolved alert endpoints every 10 seconds and stops polling when the component is destroyed. Alert creation, acknowledgement, and resolution use the existing audit collection.
-
-### Controlled monitoring demo
-
-Keep the development simulator in its default `NORMAL` profile to demonstrate that valid readings create no alert. To emit deterministic abnormal readings through the existing Kafka producer and consumer, start the backend with `MEDISPHERE_WEARABLE_SIMULATOR_PROFILE=ABNORMAL` and the development profile enabled. Repeated abnormal readings create one active alert per violated rule; acknowledge and resolve it in Patient 360, then repeat the profile to demonstrate a new alert after the previous one is resolved.
-
-M3 monitoring does not change the M2 risk models, feature extraction, SHAP explanations, or federated-learning service.
-
-## Run Locally
-
-From the repository root:
-
-```bash
-docker compose up -d --build
+```text
+Patient Data
+     ↓
+Digital Health Twin
+     ↓
+AI Risk Prediction
+     ↓
+Continuous Monitoring
+     ↓
+Clinical Alerts
+     ↓
+Personalized Care Plan
+     ↓
+Intervention & Outcome Tracking
 ```
 
-Services:
+The current implementation covers **Milestones 1–3**. Milestone 4 is planned.
 
-- Angular development server: `cd frontend && npm install && npm start` at `http://localhost:4200`
-- Backend: `http://localhost:8082`
-- HAPI FHIR: `http://localhost:8081/fhir`
-- MongoDB: `localhost:27017`
-- Kafka: `localhost:9092`
-- ML service: `http://localhost:8001/health`
+---
 
-## ML service runtime
+# 🎯 Project Objectives
 
-The ML service runs in a dedicated Linux container using Python 3.11. This keeps the ML dependencies isolated from the Java and Angular development environments.
+1. **Create a unified Digital Twin** that represents the patient's current health state.
+2. **Integrate healthcare data** using FHIR R4 and MongoDB.
+3. **Predict health risks** for cardiovascular and diabetes-related conditions.
+4. **Explain AI predictions** using SHAP.
+5. **Demonstrate federated learning** using real TensorFlow Federated execution.
+6. **Continuously monitor vitals** through Apache Kafka.
+7. **Generate and manage alerts** when configurable monitoring rules are violated.
+8. **Build toward personalized care plans**, adherence, and outcome tracking.
 
-Dockerfile summary:
+---
 
-- Python: `3.11-slim`
-- TensorFlow: `2.14.0`
-- TensorFlow Federated: `0.87.0`
-- SHAP: `0.46.0`
-- scikit-learn: `1.5.2`
-- pandas: `2.2.2`
-- NumPy: `1.25.2`
-- JAX/JAXLIB: `0.4.14`
+# 🧩 Implemented Features
 
-The dependency contract is pinned in `ml-service/requirements.txt`.
+## ✅ Milestone 1 — FHIR Integration & Digital Twin
 
-## ML endpoints
+### FHIR R4 Integration
 
-- `GET /health` -> runtime health
-- `POST /predict` -> model-backed inference with model type and feature payload
-- `GET /model-evaluation` -> evaluation metrics on the synthetic demonstration dataset
-- `GET /federated-demo` -> TensorFlow Federated FedAvg rounds and global model update metrics
+Implemented:
 
-## Risk API examples
+- HAPI FHIR R4 integration
+- FHIR metadata access
+- FHIR resource validation
+- FHIR synchronization
+- Patient-specific FHIR resource retrieval
+- FHIR DTO mapping
+- Patient 360 FHIR display
 
-```bash
-curl -X POST http://localhost:8001/predict \
-  -H "Content-Type: application/json" \
-  -d '{"patientId":"patient-1","modelType":"CARDIOVASCULAR","features":{"age":52,"sex":1,"systolicBloodPressure":138,"diastolicBloodPressure":88,"heartRate":76,"smokingStatus":1,"diabetesStatus":0,"bmi":28.4,"totalCholesterol":210}'
+### Digital Health Twin
+
+Each patient has a Health Twin stored in MongoDB containing information such as:
+
+- Demographics
+- Latest vitals
+- Laboratory data
+- FHIR resources
+- Data completeness
+- Consent state
+
+The twin is synchronized as new data arrives.
+
+### Patient 360
+
+The Angular dashboard provides:
+
+- Patient demographics
+- Health Twin
+- Latest vitals
+- Labs
+- FHIR resources
+- Completeness
+- Consent
+- AI risk predictions
+- SHAP explanations
+- Risk history
+- Alerts
+
+### Security
+
+Supported roles:
+
+- `PATIENT`
+- `PROVIDER`
+- `CLINICIAN`
+- `ADMIN`
+
+Patient-level access checking prevents one patient from accessing another patient's protected data.
+
+Consent is enforced on protected operations.
+
+Example:
+
+```text
+Patient 1 → Patient 1 data     → 200 OK
+Patient 1 → Patient 2 data     → 403 Forbidden
+Revoked consent               → 403 Forbidden
 ```
 
-```bash
-curl -X POST http://localhost:8001/predict \
-  -H "Content-Type: application/json" \
-  -d '{"patientId":"patient-2","modelType":"DIABETES","features":{"age":58,"sex":0,"bmi":31.6,"systolicBloodPressure":142,"diastolicBloodPressure":90,"glucose":132,"hba1c":7.1,"diabetesDuration":4}'
+### Audit Logging
+
+Important operations are recorded for traceability, including access, consent, prediction, monitoring, and alert lifecycle operations.
+
+---
+
+# 🤖 Milestone 2 — AI Risk Prediction
+
+Milestone 2 adds the AI layer on top of the Digital Twin.
+
+## ❤️ Cardiovascular Risk
+
+```text
+Patient Data
+     ↓
+Spring Boot Feature Extraction
+     ↓
+FastAPI ML Service
+     ↓
+Cardiovascular Model
+     ↓
+Risk Score + Category + SHAP
+     ↓
+MongoDB
+     ↓
+Patient 360
 ```
 
-## Federated training
+## 🩺 Diabetes Complication Risk
 
-The ML service uses TensorFlow Federated's unweighted FedAvg algorithm. The demo creates three synthetic hospital clients, keeps each client's raw data local to its client dataset, trains a shared Keras model locally, aggregates client updates through TFF, and completes three federated rounds.
+A separate prediction flow is implemented for diabetes-related complication risk.
 
-## Verify backend tests
+```text
+Patient Data
+     ↓
+Feature Mapping
+     ↓
+FastAPI ML Service
+     ↓
+Diabetes Model
+     ↓
+Risk Score + Category + SHAP
+     ↓
+MongoDB
+     ↓
+Patient 360
+```
+
+## 🧠 SHAP Explainability
+
+Predictions include SHAP-based feature contributions.
+
+For example:
+
+```text
+Feature A     +36.11
+Feature B      -4.82
+Feature C     +53.49
+Feature D      -8.22
+```
+
+Conceptually:
+
+- Positive contribution → pushes the model output upward.
+- Negative contribution → pushes the model output downward.
+
+The frontend displays these explanations alongside the risk result.
+
+## 🌐 ML Service
+
+The ML service uses:
+
+- Python
+- FastAPI
+- TensorFlow
+- TensorFlow Federated
+- SHAP
+- scikit-learn
+- pandas
+- NumPy
+
+Angular does **not** directly call the ML service.
+
+```text
+Angular
+   ↓
+Spring Boot
+   ↓
+ML Service
+   ↓
+Spring Boot
+   ↓
+MongoDB
+   ↓
+Angular
+```
+
+This keeps authorization, validation, persistence, and ML orchestration in the backend.
+
+## 🌍 Federated Learning
+
+The project contains a real TensorFlow Federated implementation using:
+
+- TensorFlow Federated
+- FedAvg
+- 3 simulated clients
+- 3 training rounds
+- Global model aggregation
+
+The implementation verifies non-zero global model weight changes across training rounds.
+
+This is a federated-learning engineering demonstration using simulated clients, not real hospital deployments.
+
+## 📈 Model Evaluation
+
+The ML service exposes model evaluation functionality.
+
+The current demonstration dataset is explicitly identified as:
+
+```text
+synthetic_health_demo
+```
+
+Therefore its metrics are for engineering/demo validation and **must not be interpreted as clinical validation or evidence of clinical effectiveness**.
+
+---
+
+# 🚨 Milestone 3 — Continuous Monitoring & Alerts
+
+Milestone 3 introduces continuous vital-sign monitoring.
+
+```text
+Wearable Simulator
+       ↓
+     Kafka
+       ↓
+VitalsConsumer
+       ↓
+MonitoringService
+       ↓
+Monitoring Rules
+       ↓
+AlertService
+       ↓
+MongoDB
+       ↓
+REST API
+       ↓
+Patient 360
+```
+
+## 📡 Kafka Vital Streaming
+
+The existing Kafka topic is:
+
+```text
+medisphere.vitals
+```
+
+Supported vital information includes:
+
+- Heart rate
+- SpO₂
+- Temperature
+- Blood pressure
+
+Vitals are consumed, persisted, and used to update monitoring state.
+
+## ⚙️ Configurable Monitoring Rules
+
+Rules support:
+
+- Vital type
+- Comparison operator
+- Threshold
+- Severity
+- Rule identification
+- Enable/disable configuration
+
+Example:
+
+```text
+Heart Rate > 120
+        ↓
+ABNORMAL
+        ↓
+HIGH severity alert
+```
+
+The current thresholds are **engineering/demo thresholds**, not clinically validated treatment thresholds.
+
+## 🚨 Alert Generation
+
+When a vital violates a configured rule:
+
+1. Kafka delivers the event.
+2. `VitalsConsumer` processes it.
+3. Monitoring rules are evaluated.
+4. `AlertService` creates the alert.
+5. MongoDB persists it.
+6. REST APIs expose it.
+7. Patient 360 displays it.
+
+Alert records contain information such as:
+
+- Patient ID
+- Vital type
+- Observed value
+- Threshold
+- Severity
+- Explanation
+- Status
+- Created timestamp
+- Acknowledgement information
+- Resolution information
+
+## ♻️ Duplicate Suppression
+
+Repeated abnormal values do not create unlimited duplicate alerts for the same active condition.
+
+```text
+HR = 135
+   ↓
+Alert created
+
+HR = 136
+   ↓
+Same active rule
+   ↓
+No duplicate alert
+```
+
+## 🔄 Alert Lifecycle
+
+```text
+ACTIVE
+  ↓
+ACKNOWLEDGED
+  ↓
+RESOLVED
+```
+
+The backend validates lifecycle transitions.
+
+## ⌚ Deterministic Wearable Simulator
+
+The simulator provides deterministic profiles for testing.
+
+### NORMAL
+
+Example:
+
+```text
+Heart Rate ≈ 75
+SpO₂ ≈ 98
+Normal temperature
+Normal blood pressure
+```
+
+Expected:
+
+```text
+Kafka event
+    ↓
+MongoDB vital
+    ↓
+No alert
+```
+
+### ABNORMAL
+
+Example:
+
+```text
+Heart Rate = 135
+SpO₂ = 89
+Temperature = 39.1
+Blood Pressure = 155/98
+```
+
+Expected:
+
+```text
+Kafka event
+    ↓
+Monitoring rules
+    ↓
+Multiple violations
+    ↓
+Alerts persisted
+```
+
+The deterministic profiles make demonstrations reproducible.
+
+---
+
+# 🖥️ Frontend
+
+The frontend uses:
+
+- Angular
+- TypeScript
+- SCSS
+- HTTP services
+- Route guards
+- Authentication interceptor
+
+Patient 360 contains:
+
+```text
+Patient Overview
+├── Demographics
+├── Digital Twin
+├── Vitals
+├── Labs
+├── FHIR Resources
+├── Consent
+├── AI Risk
+│   ├── Cardiovascular
+│   ├── Diabetes
+│   ├── SHAP Explanation
+│   └── Risk History
+└── Alerts
+    ├── Active Alerts
+    ├── Acknowledge
+    └── Resolve
+```
+
+---
+
+# 🏗️ Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Angular / TypeScript / SCSS |
+| Backend | Java / Spring Boot 4 |
+| Java | OpenJDK Temurin 25 |
+| Build | Maven 3.9.16 |
+| Database | MongoDB |
+| Messaging | Apache Kafka |
+| Healthcare interoperability | FHIR R4 |
+| FHIR server | HAPI FHIR |
+| AI API | Python / FastAPI |
+| ML | TensorFlow |
+| Federated Learning | TensorFlow Federated |
+| Explainability | SHAP |
+| ML utilities | scikit-learn / pandas / NumPy |
+| Authentication | JWT |
+| Containerization | Docker / Docker Compose |
+| Version control | Git / GitHub |
+
+---
+
+# 🗂️ Project Structure
+
+```text
+MediSphere-Cognitive-Twin/
+│
+├── backend/
+│   ├── src/main/java/com/medisphere/
+│   │   ├── audit/
+│   │   ├── controller/
+│   │   ├── dto/
+│   │   ├── exception/
+│   │   ├── fhir/
+│   │   ├── kafka/
+│   │   ├── monitoring/
+│   │   ├── repository/
+│   │   ├── security/
+│   │   ├── service/
+│   │   ├── wearable/
+│   │   └── ...
+│   ├── src/main/resources/
+│   │   └── application.yml
+│   └── pom.xml
+│
+├── frontend/
+│   ├── src/app/
+│   │   ├── core/
+│   │   └── features/
+│   │       └── patient-360/
+│   └── package.json
+│
+├── ml-service/
+│   ├── app.py
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── test_federated_demo.py
+│
+├── docker-compose.yml
+├── README.md
+└── .gitignore
+```
+
+---
+
+# 🔌 Service Ports
+
+| Service | Host Port | Purpose |
+|---|---:|---|
+| Angular | `4200` | Web application |
+| Spring Boot | `8082` | Main API |
+| ML Service | `8001` | AI API |
+| HAPI FHIR | `8081` | FHIR server |
+| MongoDB | `27017` | Database |
+| Kafka | `9092` | Vital streaming |
+
+---
+
+# 🚀 Running the Project
+
+## 1. Prerequisites
+
+Install:
+
+- Git
+- Docker Desktop
+- Node.js + npm
+- Java 25
+- Maven is optional because Maven Wrapper is included
+
+Verify:
 
 ```bash
-cd backend
+java --version
+javac --version
+docker --version
+docker compose version
+node --version
+npm --version
+```
+
+---
+
+## 2. Clone
+
+```bash
+git clone https://github.com/RATHISH-S-2006/MediSphere-Cognitive-Twin.git
+cd MediSphere-Cognitive-Twin
+```
+
+---
+
+## 3. Start the backend stack
+
+From the project root:
+
+```bash
+docker compose up -d
+```
+
+Check:
+
+```bash
+docker compose ps
+```
+
+The expected services are:
+
+```text
+MongoDB
+Kafka
+HAPI FHIR
+Backend
+ML Service
+```
+
+---
+
+## 4. Verify Backend
+
+Liveness:
+
+```bash
+curl.exe http://localhost:8082/api/health/live
+```
+
+Readiness:
+
+```bash
+curl.exe http://localhost:8082/api/health/ready
+```
+
+Expected responses indicate that the service is alive and ready.
+
+---
+
+## 5. Verify FHIR
+
+```bash
+curl.exe http://localhost:8081/fhir/metadata
+```
+
+A successful FHIR metadata response confirms HAPI FHIR is running.
+
+---
+
+## 6. Verify ML Service
+
+Open:
+
+```text
+http://localhost:8001/health
+```
+
+Important ML endpoints include:
+
+```text
+/predict
+/model-evaluation
+/federated-demo
+```
+
+---
+
+## 7. Start Angular
+
+Open another terminal:
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Then open:
+
+```text
+http://localhost:4200
+```
+
+Angular communicates with:
+
+```text
+http://localhost:8082
+```
+
+It does not directly call port `8001`.
+
+---
+
+# 🧪 Testing
+
+## Backend
+
+From `backend/`:
+
+```bash
 ./mvnw test
 ```
 
 Windows:
 
 ```powershell
-cd backend
-mvnw.cmd test
+.\mvnw.cmd test
 ```
 
-## Verify ML tests
+## ML Service
 
 ```bash
-cd ml-service
-python -m pytest -q
+docker compose exec ml-service pytest
 ```
 
-## Verify frontend build
+## Angular
+
+From `frontend/`:
 
 ```bash
-cd frontend
-npm install
+npm test
+```
+
+Production build:
+
+```bash
 npm run build
 ```
 
-## Verify Docker health
+---
+
+# 🐳 Useful Docker Commands
 
 ```bash
-docker compose config
-docker compose build --no-cache ml-service
-docker compose up -d
+# Status
 docker compose ps
-curl http://localhost:8001/health
+
+# All logs
+docker compose logs
+
+# Backend logs
+docker compose logs backend
+
+# ML logs
+docker compose logs ml-service
+
+# Kafka logs
+docker compose logs kafka
+
+# Follow backend logs
+docker compose logs -f backend
+
+# Stop everything
+docker compose down
+
+# Rebuild a service
+docker compose build --no-cache backend
+
+# Start a rebuilt service
+docker compose up -d backend
 ```
 
-## Security and authorization
+---
 
-The backend risk endpoints enforce patient access checks and active consent rules through the existing Spring Security configuration. Angular communicates with the Spring Boot API; it does not call the ML service directly.
+# 🔍 Recommended Demonstration Flow
 
-## Data and clinical-use note
+### 1. Open Patient 360
 
-M2 model training and evaluation use synthetic demonstration data. Evaluation metrics are engineering/demo metrics only and must not be interpreted as clinical performance evidence.
+```text
+http://localhost:4200
+```
+
+Open a seeded patient such as:
+
+```text
+patient-1
+```
+
+### 2. Show the Digital Twin
+
+Show:
+
+- Patient information
+- Health Twin
+- Vitals
+- Labs
+- FHIR resources
+- Consent
+
+### 3. Show AI Risk Prediction
+
+Show:
+
+- Cardiovascular risk
+- Diabetes risk
+- Risk score
+- Category
+- Model version
+- SHAP explanation
+- Risk history
+
+### 4. Demonstrate Normal Monitoring
+
+Run the NORMAL wearable profile.
+
+Expected:
+
+```text
+Vital → Kafka → MongoDB
+```
+
+with no alert.
+
+### 5. Demonstrate Abnormal Monitoring
+
+Run the ABNORMAL profile.
+
+Expected:
+
+```text
+Vital → Kafka → Monitoring → Alert → MongoDB → Patient 360
+```
+
+### 6. Demonstrate Alert Lifecycle
+
+```text
+ACTIVE → ACKNOWLEDGED → RESOLVED
+```
+
+### 7. Demonstrate Security
+
+Show that:
+
+```text
+patient-1 → patient-2
+```
+
+returns:
+
+```text
+403 Forbidden
+```
+
+Also demonstrate consent enforcement by revoking and restoring consent where appropriate.
+
+---
+
+# 🔐 Security Architecture
+
+The Spring Boot backend is the main security boundary.
+
+```text
+                    ┌───────────────┐
+                    │    Angular    │
+                    └───────┬───────┘
+                            │
+                       JWT / HTTP
+                            │
+                            ▼
+                  ┌───────────────────┐
+                  │   Spring Boot     │
+                  │ Security Boundary │
+                  └─────────┬─────────┘
+                            │
+          ┌─────────────────┼──────────────────┐
+          │                 │                  │
+          ▼                 ▼                  ▼
+      MongoDB          ML Service          Kafka
+```
+
+Backend responsibilities include:
+
+- Authentication
+- Role authorization
+- Patient access checks
+- Consent checks
+- Request validation
+- ML response validation
+- Persistence
+- Audit logging
+
+---
+
+# 🗄️ MongoDB Persistence
+
+Application state includes:
+
+- Patients
+- Health Twins
+- Vitals
+- Lab results
+- FHIR resources
+- Consents
+- Audit events
+- Risk predictions
+- Monitoring rules
+- Alerts
+
+Risk records preserve:
+
+- Patient ID
+- Model type
+- Score
+- Category
+- Model version
+- Timestamp
+- SHAP values
+- Input feature snapshot
+- Prediction source
+
+Alert records preserve:
+
+- Patient
+- Rule
+- Vital type
+- Observed value
+- Threshold
+- Severity
+- Explanation
+- Status
+- Created timestamp
+- Acknowledgement details
+- Resolution details
+
+---
+
+# 🧪 Validation Summary
+
+The project has been validated at multiple layers.
+
+### M1
+
+- Backend tests
+- Angular tests
+- Production build
+- Docker Compose validation
+- FHIR connectivity
+- MongoDB persistence
+- Kafka connectivity
+- Authorization and consent checks
+
+### M2
+
+- Backend tests
+- ML tests
+- Angular tests
+- Production build
+- Real TensorFlow Federated execution
+- Spring Boot → ML integration
+- Risk persistence
+- SHAP response validation
+- Authorization/consent validation
+- End-to-end prediction flow
+
+### M3
+
+- Monitoring service tests
+- Alert service tests
+- Kafka consumer tests
+- Angular tests
+- Production build
+- Kafka → MongoDB validation
+- Normal profile → no alert
+- Abnormal profile → alert generation
+- Duplicate suppression
+- Alert lifecycle
+- Timestamp persistence
+- Authorization validation
+- M1/M2 regression checks
+
+---
+
+# 📊 Milestone Status
+
+| Milestone | Area | Status |
+|---|---|---|
+| M1 | FHIR Integration & Digital Twin | ✅ Complete |
+| M2 | AI Risk Prediction & Federated Learning | ✅ Complete |
+| M3 | Continuous Monitoring & Alerts | ✅ Complete |
+| M4 | Care Plan & Treatment | 🔄 Planned |
+
+---
+
+# 🛣️ Milestone 4 — Planned
+
+The final milestone extends the system from detection to intervention:
+
+```text
+Risk + Alerts
+     ↓
+Personalized Care Plan
+     ↓
+Recommended Interventions
+     ↓
+Adherence Tracking
+     ↓
+Outcome Tracking
+```
+
+Planned capabilities:
+
+- Personalized care plans
+- Guideline-driven recommendations
+- Intervention tracking
+- Patient adherence
+- Care-plan status
+- Outcome recording
+- Care-plan history
+
+Clinical recommendations should use appropriately sourced and verified clinical guidance rather than invented medical rules.
+
+---
+
+# ⚠️ Current Limitations
+
+MediSphere is currently an engineering/research prototype and is **not a production clinical system**.
+
+Important limitations:
+
+- ML evaluation uses synthetic demonstration data.
+- Federated learning uses simulated clients rather than real hospitals.
+- Monitoring thresholds are engineering/demo values and are not clinically validated.
+- Development JWT configuration is intended for local development.
+- Milestone 4 care-plan/intervention functionality is not yet implemented.
+- Production deployment would require additional security hardening, secrets management, observability, compliance controls, infrastructure, and clinical validation.
+
+---
+
+# 🧠 Architecture Principles
+
+### 1. Backend is the system-of-record boundary
+
+Frontend clients do not directly access internal services.
