@@ -1,4 +1,16 @@
 .risk-panel { grid-column: 1 / -1; }
+.alerts-panel, .alert-history { grid-column: 1 / -1; }
+.alert-count { min-width: 28px; padding: 5px 8px; border-radius: 999px; background: #fce9df; color: #a34735; text-align: center; font-weight: 700; }
+.alert-row { display: grid; grid-template-columns: 88px 1fr auto; gap: 14px; align-items: center; padding: 14px 0; border-top: 1px solid #e6eeee; }
+.alert-copy { display: grid; gap: 4px; }
+.alert-copy strong, .alert-history-row strong { color: #193d46; }
+.alert-copy span, .alert-copy time, .alert-history-row { color: #49636a; font-size: 12px; }
+.alert-severity { width: fit-content; padding: 5px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+.alert-severity.low { background: #e8f4ed; color: #27734a; }
+.alert-severity.medium { background: #fff3d8; color: #8b6500; }
+.alert-severity.high, .alert-severity.critical { background: #fce9df; color: #a34735; }
+.alert-actions { display: flex; gap: 8px; }
+.alert-history-row { display: grid; grid-template-columns: 1fr 90px 2fr 1fr; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid #e6eeee; }
 .risk-history { grid-column: 1 / -1; }
 .risk-history-row { display: grid; grid-template-columns: 1.2fr 1fr 1.4fr 1.3fr; gap: 12px; padding: 10px 0; border-top: 1px solid #e6eeee; color: #49636a; font-size: 12px; }
 .risk-history-row strong { color: #193d46; }

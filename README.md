@@ -31,6 +31,31 @@ MediSphere is a healthcare digital twin platform that ingests synthetic patient,
 - MongoDB persistence for risk predictions, feature snapshots, and history
 - Angular Patient 360 risk prediction and history UI
 
+## M3 Continuous monitoring and alerts
+
+M3 reuses the existing `medisphere.vitals` Kafka topic and `VitalsConsumer`. After the existing patient, consent, validation, vitals persistence, and HealthTwin update steps succeed, the consumer evaluates the same `VitalEvent` against the configurable monitoring rules in `backend/src/main/resources/application.yml`. Violations are stored in MongoDB's `alerts` collection and exposed in Patient 360 through the alert API.
+
+The default rules cover heart rate, SpO2, temperature, systolic blood pressure, and diastolic blood pressure. These are engineering/demo thresholds, not medically validated clinical or treatment thresholds. Each rule defines its alert type, vital type, severity, comparison operator, threshold, and enabled flag.
+
+An existing `ACTIVE` alert with the same patient, alert type, and vital type is retained when repeated events violate that rule. Different rules create separate alerts. Lifecycle transitions are `ACTIVE -> ACKNOWLEDGED -> RESOLVED`; an active alert may also be resolved directly. Invalid transitions return a conflict response.
+
+Alert endpoints are protected by the existing JWT roles, `PatientAccessChecker`, and active-consent enforcement:
+
+- `GET /api/alerts/{patientId}` - patient alert records
+- `GET /api/alerts/{patientId}/active` - active and acknowledged alerts
+- `GET /api/alerts/{patientId}/history` - resolved alert history
+- `GET /api/alerts/by-id/{id}` - one alert
+- `POST /api/alerts/by-id/{id}/acknowledge` - acknowledge an active alert
+- `POST /api/alerts/by-id/{id}/resolve` - resolve an active or acknowledged alert
+
+Patient 360 polls active and resolved alert endpoints every 10 seconds and stops polling when the component is destroyed. Alert creation, acknowledgement, and resolution use the existing audit collection.
+
+### Controlled monitoring demo
+
+Keep the development simulator in its default `NORMAL` profile to demonstrate that valid readings create no alert. To emit deterministic abnormal readings through the existing Kafka producer and consumer, start the backend with `MEDISPHERE_WEARABLE_SIMULATOR_PROFILE=ABNORMAL` and the development profile enabled. Repeated abnormal readings create one active alert per violated rule; acknowledge and resolve it in Patient 360, then repeat the profile to demonstrate a new alert after the previous one is resolved.
+
+M3 monitoring does not change the M2 risk models, feature extraction, SHAP explanations, or federated-learning service.
+
 ## Run Locally
 
 From the repository root:

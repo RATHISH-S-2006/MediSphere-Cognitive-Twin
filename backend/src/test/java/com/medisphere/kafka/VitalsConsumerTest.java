@@ -12,6 +12,7 @@ import com.medisphere.repository.PatientRepository;
 import com.medisphere.repository.VitalsRepository;
 import com.medisphere.service.HealthTwinService;
 import com.medisphere.validation.VitalsValidator;
+import com.medisphere.monitoring.AlertService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ class VitalsConsumerTest {
     @Mock private ConsentService consentService;
     @Mock private HealthTwinService healthTwinService;
     @Mock private AuditService auditService;
+    @Mock private AlertService alertService;
 
     private VitalsConsumer consumer;
     private ObjectMapper objectMapper;
@@ -44,7 +46,7 @@ class VitalsConsumerTest {
     void setUp() {
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         consumer = new VitalsConsumer(objectMapper, vitalsRepository, patientRepository,
-                consentService, new VitalsValidator(), healthTwinService, auditService);
+            consentService, new VitalsValidator(), healthTwinService, auditService, alertService);
     }
 
     @Test
@@ -58,6 +60,7 @@ class VitalsConsumerTest {
 
         verify(vitalsRepository).save(any(Vitals.class));
         verify(healthTwinService).updateLatestVitals(org.mockito.ArgumentMatchers.eq("patient-1"), any(Vitals.class));
+        verify(alertService).process(event);
     }
 
     @Test
