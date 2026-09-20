@@ -167,3 +167,25 @@ export interface RiskPrediction {
   explanations: RiskExplanation[];
   inputFeatures?: Record<string, number>;
 }
+
+export type AlertStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED';
+export type AlertSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface Alert {
+  id: string;
+  patientId: string;
+  alertType: string;
+  vitalType: string;
+  observedValue: number;
+  threshold: number;
+  operator: string;
+  severity: AlertSeverity;
+  message: string;
+  source: string | null;
+  createdAt: string;
+  status: AlertStatus;
+  acknowledgedBy: string | null;
+  acknowledgedAt: string | null;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+}

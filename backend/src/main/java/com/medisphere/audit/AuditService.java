@@ -101,6 +101,9 @@ public class AuditService {
         public static final String CONSENT_REVOKE       = "CONSENT_REVOKE";
         public static final String CONSENT_CHECK        = "CONSENT_CHECK";
         public static final String VITALS_ACCESS        = "VITALS_ACCESS";
+        public static final String ALERT_CREATED        = "ALERT_CREATED";
+        public static final String ALERT_ACKNOWLEDGED   = "ALERT_ACKNOWLEDGED";
+        public static final String ALERT_RESOLVED       = "ALERT_RESOLVED";
         public static final String LABS_ACCESS          = "LABS_ACCESS";
         public static final String AUTH_SUCCESS         = "AUTH_SUCCESS";
         public static final String AUTH_FAILURE         = "AUTH_FAILURE";

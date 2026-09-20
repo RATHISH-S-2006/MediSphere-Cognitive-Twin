@@ -77,6 +77,7 @@ services:
       - FHIR_BASE_URL=http://hapi-fhir:8080/fhir
       - ML_SERVICE_URL=http://ml-service:8001
       - SPRING_PROFILES_ACTIVE=dev
+      - MEDISPHERE_WEARABLE_SIMULATOR_PROFILE=${MEDISPHERE_WEARABLE_SIMULATOR_PROFILE:-NORMAL}
     depends_on:
       mongodb:
         condition: service_healthy

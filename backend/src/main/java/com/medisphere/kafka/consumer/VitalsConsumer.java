@@ -10,6 +10,7 @@ import com.medisphere.repository.VitalsRepository;
 import com.medisphere.service.HealthTwinService;
 import com.medisphere.consent.ConsentService;
 import com.medisphere.validation.VitalsValidator;
+import com.medisphere.monitoring.AlertService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -30,6 +31,7 @@ public class VitalsConsumer {
     private final VitalsValidator vitalsValidator;
     private final HealthTwinService healthTwinService;
     private final AuditService auditService;
+    private final AlertService alertService;
 
     @KafkaListener(topics = "medisphere.vitals", groupId = "medisphere-group")
     public void consume(String message) {
@@ -82,6 +84,7 @@ public class VitalsConsumer {
 
             vitalsRepository.save(vitals);
             healthTwinService.updateLatestVitals(patient.getId(), vitals);
+            alertService.process(event);
             auditService.record(AuditService.Actions.VITALS_ACCESS, "Vitals", vitals.getId(),
                     event.getPatientId(), AuditService.Outcomes.SUCCESS, "Vitals event consumed and twin updated");
         } catch (Exception ex) {

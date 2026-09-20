@@ -27,3 +27,42 @@ medisphere:
   wearable-simulator:
     enabled: false
     interval-ms: 5000
+    profile: ${MEDISPHERE_WEARABLE_SIMULATOR_PROFILE:NORMAL}
+  monitoring:
+    rules:
+      - alert-type: HEART_RATE_HIGH
+        vital-type: HEART_RATE
+        severity: HIGH
+        operator: GREATER_THAN
+        threshold: 120
+        enabled: true
+      - alert-type: HEART_RATE_LOW
+        vital-type: HEART_RATE
+        severity: MEDIUM
+        operator: LESS_THAN
+        threshold: 50
+        enabled: true
+      - alert-type: SPO2_LOW
+        vital-type: SPO2
+        severity: CRITICAL
+        operator: LESS_THAN
+        threshold: 92
+        enabled: true
+      - alert-type: TEMPERATURE_HIGH
+        vital-type: TEMPERATURE
+        severity: MEDIUM
+        operator: GREATER_THAN
+        threshold: 38
+        enabled: true
+      - alert-type: SYSTOLIC_BP_HIGH
+        vital-type: SYSTOLIC_BLOOD_PRESSURE
+        severity: HIGH
+        operator: GREATER_THAN
+        threshold: 140
+        enabled: true
+      - alert-type: DIASTOLIC_BP_HIGH
+        vital-type: DIASTOLIC_BLOOD_PRESSURE
+        severity: HIGH
+        operator: GREATER_THAN
+        threshold: 90
+        enabled: true

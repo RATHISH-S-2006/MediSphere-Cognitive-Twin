@@ -3,6 +3,7 @@ package com.medisphere.exception;
 import jakarta.validation.ConstraintViolationException;
 import com.medisphere.common.CorrelationIdFilter;
 import com.medisphere.risk.MlServiceException;
+import com.medisphere.monitoring.InvalidAlertStateException;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
@@ -83,6 +84,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
         return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidAlertStateException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidAlertState(InvalidAlertStateException ex, WebRequest request) {
+        return error(HttpStatus.CONFLICT, "INVALID_ALERT_STATE", ex.getMessage(), request);
     }
 
     @ExceptionHandler(Exception.class)
