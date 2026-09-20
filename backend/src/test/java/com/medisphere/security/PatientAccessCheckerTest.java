@@ -32,6 +32,9 @@ class PatientAccessCheckerTest {
         authenticate("provider-1", "ROLE_PROVIDER");
         assertThat(checker.canAccess("patient-2")).isTrue();
 
+        authenticate("clinician-1", "ROLE_CLINICIAN");
+        assertThat(checker.canAccess("patient-2")).isTrue();
+
         authenticate("admin-1", "ROLE_ADMIN");
         assertThat(checker.canAccess("patient-2")).isTrue();
     }
