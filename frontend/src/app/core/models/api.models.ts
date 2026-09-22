@@ -189,3 +189,73 @@ export interface Alert {
   resolvedBy: string | null;
   resolvedAt: string | null;
 }
+
+export type CarePlanStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+export type CarePlanPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type InterventionStatus = 'PENDING' | 'COMPLETED' | 'MISSED' | 'SKIPPED';
+
+export interface CarePlanGoal {
+  id: string;
+  description: string;
+  targetType: string;
+  targetValue: number | null;
+  unit: string | null;
+  startDate: string | null;
+  targetDate: string | null;
+  status: string;
+  progress: number;
+  notes: string | null;
+}
+
+export interface CarePlanIntervention {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  frequency: string;
+  scheduledTime: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  status: InterventionStatus;
+  priority: CarePlanPriority;
+  instructions: string;
+  completionCount: number;
+  missedCount: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface AdherenceSummary { completed: number; missed: number; pending: number; adherencePercentage: number; }
+export interface OutcomeSummary { total: number; achieved: number; }
+export interface CarePlan {
+  id: string;
+  patientId: string;
+  title: string;
+  description: string;
+  status: CarePlanStatus;
+  priority: CarePlanPriority;
+  createdAt: string | null;
+  updatedAt: string | null;
+  generatedAt: string | null;
+  source: string;
+  generationReasons: string[];
+  basedOnRiskPredictionIds: string[];
+  basedOnAlertIds: string[];
+  goals: CarePlanGoal[];
+  interventions: CarePlanIntervention[];
+  adherenceSummary: AdherenceSummary;
+  outcomeSummary: OutcomeSummary;
+  version: number;
+}
+export interface CarePlanOutcome {
+  id: string;
+  patientId: string;
+  carePlanId: string;
+  goalId: string;
+  measuredValue: number;
+  unit: string | null;
+  recordedAt: string;
+  notes: string | null;
+  source: string;
+  status: string;
+}

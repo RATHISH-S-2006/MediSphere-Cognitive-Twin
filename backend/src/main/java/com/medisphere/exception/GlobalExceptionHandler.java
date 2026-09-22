@@ -91,6 +91,11 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.CONFLICT, "INVALID_ALERT_STATE", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(InvalidCarePlanStateException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCarePlanState(InvalidCarePlanStateException ex, WebRequest request) {
+        return error(HttpStatus.CONFLICT, "INVALID_CARE_PLAN_STATE", ex.getMessage(), request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex, WebRequest request) {
         log.error("[ERROR] Unexpected error: {}", ex.getMessage(), ex);
