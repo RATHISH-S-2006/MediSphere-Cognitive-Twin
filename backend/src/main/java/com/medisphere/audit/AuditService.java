@@ -104,6 +104,15 @@ public class AuditService {
         public static final String ALERT_CREATED        = "ALERT_CREATED";
         public static final String ALERT_ACKNOWLEDGED   = "ALERT_ACKNOWLEDGED";
         public static final String ALERT_RESOLVED       = "ALERT_RESOLVED";
+        public static final String CARE_PLAN_CREATED    = "CARE_PLAN_CREATED";
+        public static final String CARE_PLAN_VIEWED     = "CARE_PLAN_VIEWED";
+        public static final String CARE_PLAN_ACTIVATED  = "CARE_PLAN_ACTIVATED";
+        public static final String CARE_PLAN_PAUSED     = "CARE_PLAN_PAUSED";
+        public static final String CARE_PLAN_COMPLETED  = "CARE_PLAN_COMPLETED";
+        public static final String CARE_PLAN_CANCELLED  = "CARE_PLAN_CANCELLED";
+        public static final String INTERVENTION_COMPLETED = "INTERVENTION_COMPLETED";
+        public static final String INTERVENTION_MISSED  = "INTERVENTION_MISSED";
+        public static final String OUTCOME_RECORDED     = "OUTCOME_RECORDED";
         public static final String LABS_ACCESS          = "LABS_ACCESS";
         public static final String AUTH_SUCCESS         = "AUTH_SUCCESS";
         public static final String AUTH_FAILURE         = "AUTH_FAILURE";

@@ -56,6 +56,26 @@ Keep the development simulator in its default `NORMAL` profile to demonstrate th
 
 M3 monitoring does not change the M2 risk models, feature extraction, SHAP explanations, or federated-learning service.
 
+## M4 Care plans, interventions, adherence, and outcomes
+
+M4 extends Patient 360 with a persisted care-plan layer. `POST /api/care-plans/{patientId}/generate` gathers the latest stored risk predictions, active or acknowledged alerts, and available vital context. It creates deterministic demonstration goals and interventions, records generation reasons, and stores links to the contributing risk and alert IDs. An existing active plan is returned instead of creating an identical duplicate.
+
+Care-plan status transitions are explicitly validated: `DRAFT -> ACTIVE`, `ACTIVE -> PAUSED|COMPLETED|CANCELLED`, and `PAUSED -> ACTIVE`. Intervention completion or missed status is recorded once per intervention and calendar date, and the plan summary calculates completed, missed, pending, and `completed / (completed + missed) * 100` adherence. Outcomes are persisted against a plan and goal and are shown as measured engineering/demo observations.
+
+M4 endpoints include:
+
+- `GET /api/care-plans/{patientId}` and `/active`
+- `POST /api/care-plans/{patientId}/generate`
+- `GET /api/care-plans/by-id/{id}`
+- `POST /api/care-plans/by-id/{id}/activate|pause|complete|cancel`
+- `POST /api/care-plans/by-id/{id}/interventions/{interventionId}/complete|miss`
+- `GET /api/care-plans/by-id/{id}/adherence`
+- `POST` and `GET /api/care-plans/by-id/{id}/outcomes`
+
+Patient-level access and active consent checks reuse the existing Spring Security, `PatientAccessChecker`, and `ConsentService` architecture. Care-plan creation, lifecycle changes, intervention actions, and outcomes are recorded through `AuditService`. Angular uses the typed `CarePlanService` and renders the M4 section inside the existing Patient 360 page.
+
+The care-plan rules are engineering/demo logic and are not medical advice or validated clinical guidelines. The system never invents medication names, doses, or treatment instructions; medication review requires clinician review. Outcomes are not clinically meaningful unless supported by real measurements. A dedicated internal-to-FHIR CarePlan mapping is still a future interoperability enhancement; M4 currently persists the internal model without replacing the existing M1 FHIR resources.
+
 ## Run Locally
 
 From the repository root:
@@ -158,6 +178,10 @@ curl http://localhost:8001/health
 
 The backend risk endpoints enforce patient access checks and active consent rules through the existing Spring Security configuration. Angular communicates with the Spring Boot API; it does not call the ML service directly.
 
+Care-plan endpoints use the same authorization and consent policy. Patients can view authorized plans and record their own intervention adherence; providers, clinicians, and administrators can generate plans and manage plan lifecycle or outcomes according to the existing role policy.
+
 ## Data and clinical-use note
 
 M2 model training and evaluation use synthetic demonstration data. Evaluation metrics are engineering/demo metrics only and must not be interpreted as clinical performance evidence.
+
+M3 thresholds and M4 care-plan generation rules are configurable engineering/demo behavior. This project does not establish HIPAA or clinical compliance. Real-world deployment requires clinician governance, validated models and guidelines, production privacy controls, and independent safety review.
