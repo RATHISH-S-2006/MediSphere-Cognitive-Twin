@@ -23,4 +23,13 @@ describe('App', () => {
     expect(compiled.querySelector('.brand')?.textContent).toContain('MediSphere');
     expect(compiled.querySelector('nav')?.textContent).toContain('Patients');
   });
+
+  it('should expose every completed module as a real navigation link', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const links = Array.from(fixture.nativeElement.querySelectorAll('nav a')) as HTMLAnchorElement[];
+    expect(links.map(link => link.getAttribute('href'))).toEqual([
+      '/', '/patients', '/risk', '/monitoring', '/care-plans', '/fhir', '/consent', '/audit'
+    ]);
+  });
 });

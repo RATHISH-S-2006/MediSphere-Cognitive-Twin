@@ -1,12 +1,13 @@
 <div class="app-frame">
   <aside class="sidebar">
-    <a class="brand" routerLink="/"><span class="brand-mark">M</span><span>MediSphere<small>COGNITIVE TWIN</small></span></a>
+    <a class="brand" routerLink="/" aria-label="MediSphere dashboard"><span class="brand-mark">M</span><span>MediSphere<small>COGNITIVE TWIN</small></span></a>
     <nav aria-label="Primary navigation">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span>⌂</span>Dashboard</a>
-      <a routerLink="/patients" routerLinkActive="active"><span>◎</span>Patients</a>
+      <div class="nav-group"><p>CLINICAL OPERATIONS</p><a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span aria-hidden="true">+</span>Dashboard</a><a routerLink="/patients" routerLinkActive="active"><span aria-hidden="true">#</span>Patients</a></div>
+      <div class="nav-group"><p>CLINICAL INTELLIGENCE</p><a routerLink="/risk" routerLinkActive="active"><span aria-hidden="true">R</span>Risk &amp; Predictions</a><a routerLink="/monitoring" routerLinkActive="active"><span aria-hidden="true">!</span>Monitoring &amp; Alerts</a><a routerLink="/care-plans" routerLinkActive="active"><span aria-hidden="true">C</span>Care Plans</a></div>
+      <div class="nav-group"><p>DATA &amp; GOVERNANCE</p><a routerLink="/fhir" routerLinkActive="active"><span aria-hidden="true">F</span>FHIR &amp; Clinical Data</a><a routerLink="/consent" routerLinkActive="active"><span aria-hidden="true">S</span>Consent &amp; Access</a><a routerLink="/audit" routerLinkActive="active"><span aria-hidden="true">A</span>Audit Trail</a></div>
     </nav>
-    <div class="future"><p>PLANNED MODULES</p><span>Risk &amp; Predictions <b>M2</b></span><span>Monitoring &amp; Alerts <b>M3</b></span><span>Care Plans <b>M4</b></span></div>
-    <div class="sidebar-foot"><span class="online"></span><span>Development environment</span></div>
+    <div class="milestones" aria-label="Implemented milestones"><p>IMPLEMENTED</p><span><b>M1</b> Digital Twin &amp; FHIR</span><span><b>M2</b> Risk Intelligence</span><span><b>M3</b> Monitoring &amp; Alerts</span><span><b>M4</b> Care Plans</span></div>
+    <div class="sidebar-foot"><span class="online"></span><span>Secure development environment</span></div>
   </aside>
-  <main class="workspace"><header class="topbar"><div><span class="crumb">MediSphere / </span><strong>Clinical workspace</strong></div><span class="secure">● Secure session</span></header><div class="content"><router-outlet /></div></main>
+  <main class="workspace"><header class="topbar"><div><span class="crumb">MediSphere / </span><strong>Clinical workspace</strong></div><div class="topbar-actions"><span class="secure"><i></i> Secure session</span></div></header><div class="content"><router-outlet /></div></main>
 </div>

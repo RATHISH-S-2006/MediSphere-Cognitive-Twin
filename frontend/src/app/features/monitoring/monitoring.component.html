@@ -1,0 +1,22 @@
+<section class="ops-page">
+  <header class="page-heading"><div><p class="eyebrow">M3 · CLINICAL INTELLIGENCE</p><h1>Monitoring &amp; Alerts</h1><p class="lede">Review real-time signals and manage validated alert lifecycle actions.</p></div><button class="button secondary" (click)="load()" [disabled]="loading()">Refresh</button></header>
+  <div class="metric-grid"><article class="metric"><span class="metric-icon coral">!</span><div><span>Active</span><strong>{{ count('ACTIVE') }}</strong></div></article><article class="metric"><span class="metric-icon amber">A</span><div><span>Acknowledged</span><strong>{{ count('ACKNOWLEDGED') }}</strong></div></article><article class="metric"><span class="metric-icon teal">R</span><div><span>Resolved</span><strong>{{ count('RESOLVED') }}</strong></div></article></div>
+  <div class="filters"><label>Status<select [value]="status()" (change)="updateFilter('status', $event)"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="ACKNOWLEDGED">Acknowledged</option><option value="RESOLVED">Resolved</option></select></label><label>Severity<select [value]="severity()" (change)="updateFilter('severity', $event)"><option value="ALL">All severities</option><option value="CRITICAL">Critical</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option></select></label><label>Patient<select [value]="patientId()" (change)="updateFilter('patientId', $event)"><option value="">All patients</option>@for (patient of patients(); track patient.id) {<option [value]="patient.id">{{ patient.firstName }} {{ patient.lastName }}</option>}</select></label><label>Vital type<input [value]="vital()" (input)="updateFilter('vital', $event)" placeholder="Heart rate, SpO2..." /></label></div>
+  @if (loading()) {
+    <div class="state">Loading monitoring data...</div>
+  } @else if (error()) {
+    <div class="state error">{{ error() }}</div>
+  } @else {
+    <div class="table-card">
+      @if (!filtered().length) {
+        <div class="state empty"><strong>No alerts match these filters</strong><span>All monitored signals are currently within the selected view.</span></div>
+      } @else {
+        <div class="table-wrap"><table><thead><tr><th>Patient</th><th>Vital</th><th>Reading</th><th>Threshold</th><th>Severity</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>
+          @for (alert of filtered(); track alert.id) {
+            <tr><td><strong>{{ patientName(alert.patientId) }}</strong><small>{{ alert.patientId }}</small></td><td>{{ alert.vitalType }}</td><td>{{ alert.observedValue }}</td><td>{{ alert.operator }} {{ alert.threshold }}</td><td><span class="badge" [class.critical]="alert.severity === 'CRITICAL' || alert.severity === 'HIGH'">{{ alert.severity }}</span></td><td><span class="status-badge" [class.resolved]="alert.status === 'RESOLVED'">{{ alert.status }}</span></td><td>{{ alert.createdAt | date:'MMM d, y, HH:mm' }}</td><td><div class="actions">@if (alert.status === 'ACTIVE') {<button class="button small secondary" (click)="change(alert, 'acknowledge')" [disabled]="action() === alert.id">Acknowledge</button>} @if (alert.status === 'ACKNOWLEDGED') {<button class="button small secondary" (click)="change(alert, 'resolve')" [disabled]="action() === alert.id">Resolve</button>} @if (alert.status === 'RESOLVED') {<span class="muted">Closed</span>}</div></td></tr>
+          }
+        </tbody></table></div>
+      }
+    </div>
+  }
+</section>

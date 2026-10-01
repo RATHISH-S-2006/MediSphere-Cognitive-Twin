@@ -1,0 +1,21 @@
+<section class="ops-page">
+  <header class="page-heading"><div><p class="eyebrow">M1 · DATA &amp; GOVERNANCE</p><h1>Consent &amp; Access</h1><p class="lede">Review the authorization record enforced by the backend for each patient.</p></div><label class="patient-select">Patient<select [value]="selectedPatient()" (change)="select($event)"><option value="">Select a patient</option>@for (patient of patients(); track patient.id) {<option [value]="patient.id">{{ patient.firstName }} {{ patient.lastName }}</option>}</select></label></header>
+  @if (loading()) {
+    <div class="state">Loading consent records...</div>
+  } @else if (error()) {
+    <div class="state error">{{ error() }}</div>
+  } @else {
+    <article class="access-card"><div><p class="eyebrow">CURRENT ACCESS</p><h2>{{ patientName() }}</h2><p class="muted">{{ verification()?.patientId }}</p></div><span class="badge" [class.good]="verification()?.active">{{ verification()?.active ? 'ACTIVE' : 'REVIEW REQUIRED' }}</span></article>
+    <div class="table-card">
+      @if (!consents().length) {
+        <div class="state"><strong>No consent history</strong><span>No consent records were returned for this patient.</span></div>
+      } @else {
+        <div class="table-wrap"><table><thead><tr><th>Status</th><th>Purpose</th><th>Scope</th><th>Granted</th><th>Expires</th><th>Last updated</th></tr></thead><tbody>
+          @for (consent of consents(); track consent.consentId) {
+            <tr><td><span class="badge" [class.good]="consent.status === 'GRANTED'">{{ consent.status }}</span></td><td>{{ consent.purpose }}</td><td>{{ consent.scope }}</td><td>{{ consent.grantedAt | date:'MMM d, y' }}</td><td>{{ consent.expiresAt ? (consent.expiresAt | date:'MMM d, y') : 'No expiry' }}</td><td>{{ consent.updatedAt | date:'MMM d, y, HH:mm' }}</td></tr>
+          }
+        </tbody></table></div>
+      }
+    </div>
+  }
+</section>

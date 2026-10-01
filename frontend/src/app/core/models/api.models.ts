@@ -259,3 +259,20 @@ export interface CarePlanOutcome {
   source: string;
   status: string;
 }
+
+export interface AuditEvent {
+  auditId: string;
+  timestamp: string;
+  actorId: string;
+  actorRole: string;
+  action: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  patientId: string | null;
+  outcome: string;
+  outcomeDetail: string | null;
+  correlationId: string | null;
+  requestPath: string | null;
+  clientIp: string | null;
+  schemaVersion: string | null;
+}

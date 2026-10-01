@@ -1,0 +1,31 @@
+<section class="ops-page">
+  <header class="page-heading">
+    <div><p class="eyebrow">M1 · DATA &amp; GOVERNANCE</p><h1>FHIR &amp; Clinical Data</h1><p class="lede">Inspect connected FHIR resources without losing the readable clinical context.</p></div>
+    <label class="patient-select">Patient<select [value]="selectedPatient()" (change)="select($event)"><option value="">Select a patient</option>@for (patient of patients(); track patient.id) {<option [value]="patient.id">{{ patient.firstName }} {{ patient.lastName }}</option>}</select></label>
+  </header>
+  @if (loading()) {
+    <div class="state">Loading FHIR resources...</div>
+  } @else if (error()) {
+    <div class="state error">{{ error() }}</div>
+  } @else {
+    <div class="metric-grid">
+      <article class="metric"><span class="metric-icon teal">F</span><div><span>Total resources</span><strong>{{ resources().length }}</strong></div></article>
+      <article class="metric"><span class="metric-icon navy">T</span><div><span>Resource types</span><strong>{{ resourceTypeCount() }}</strong></div></article>
+      <article class="metric"><span class="metric-icon amber">↻</span><div><span>Latest update</span><strong>{{ resources()[0]?.lastUpdated ? (resources()[0].lastUpdated | date:'MMM d') : 'No data' }}</strong></div></article>
+    </div>
+    <div class="table-card">
+      @if (!resources().length) {
+        <div class="state"><strong>No FHIR resources available</strong><span>No connected clinical resources were returned for this patient.</span></div>
+      } @else {
+        <div class="table-wrap"><table><thead><tr><th>Patient</th><th>Resource type</th><th>FHIR ID</th><th>Last updated</th><th></th></tr></thead><tbody>
+          @for (resource of resources(); track resource.id) {
+            <tr><td>{{ patientName(resource.patientId) }}</td><td><span class="type">{{ resource.resourceType }}</span></td><td>{{ resource.fhirResourceId }}</td><td>{{ resource.lastUpdated | date:'MMM d, y, HH:mm' }}</td><td><button class="button small secondary" (click)="expanded.set(expanded() === resource.id ? '' : resource.id)">{{ expanded() === resource.id ? 'Hide details' : 'View details' }}</button></td></tr>
+            @if (expanded() === resource.id) {
+              <tr class="details"><td colspan="5"><strong>Readable resource context</strong><span>{{ resource.resourceType }} {{ resource.fhirResourceId }} linked to {{ patientName(resource.patientId) }}. Source: {{ resource.sourceSystem || 'Not recorded' }} · Version: {{ resource.version || 'Not recorded' }}</span></td></tr>
+            }
+          }
+        </tbody></table></div>
+      }
+    </div>
+  }
+</section>
